@@ -8,6 +8,8 @@ name = "pypi"
 yt-dlp = "*"
 "google.cloud" = "*"
 firebase-admin = "*"
+ffmpeg = "*"
+pynacl = "*"
 
 [dev-packages]
 

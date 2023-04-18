@@ -2,6 +2,8 @@ import os
 import discord
 import logging
 import asyncio
+import ctypes
+import ctypes.util
 from discord.ext import commands
 
 

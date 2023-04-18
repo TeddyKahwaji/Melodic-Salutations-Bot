@@ -20,20 +20,20 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
     async def on_voice_state_update(self, member, before, after):
         hasJoined = before.channel is None and after.channel is not None and not member.bot
         isEmptyServer = before.channel is not None and len(before.channel.members) == 1 and member.guild.voice_client is not None
-        hasLeft = not member.bot and before.channel is not None and after.channel is None and len(before.channel.members) > 2
+        hasLeft = not member.bot and before.channel is not None and after.channel is None and len(before.channel.members) > 1
 
         
         performWelcomeIntro = None 
         if hasJoined:
             performWelcomeIntro = True 
         elif isEmptyServer:
-            await member.guild.voice_client.disconnect
+            await member.guild.voice_client.disconnect()
             return 
         elif hasLeft: 
             performWelcomeIntro = False 
             
         if performWelcomeIntro is not None: 
-            channel = after.channel if hasJoined else before.channel
+            channel = after.channel if performWelcomeIntro else before.channel
             if member.guild.voice_client is None:
                 vc =  await channel.connect() 
             else:

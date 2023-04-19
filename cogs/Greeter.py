@@ -47,7 +47,9 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
                 collection, str(member.id))[documentKey] 
             
             voiceLineUrl = self.Firebase.getAudioFile(choice(memberVoiceLines))
-            if vc.is_playing(): 
+            if voiceLineUrl is None: 
+                return 
+            elif vc.is_playing(): 
                 self.serverPlayers[member.guild.id].append(voiceLineUrl)
             else: 
                 await self.ExtractAndPlay(voiceLineUrl, vc, member.guild.id)

@@ -42,13 +42,12 @@ class FireBaseApi:
             return False
         
     def getAudioFile(self, audioFileName: str) -> str | None:
-        blobs = self.storage_client.list_blobs(BUCKET_NAME)
-        potentialBlob = list(filter(lambda e: audioFileName ==
-                             e.name.replace("voicelines/", ""), blobs))
-        if len(potentialBlob) == 0:
+        bucket = self.storage_client.get_bucket(BUCKET_NAME)
+        blob = bucket.get_blob(blob_name=f"voicelines/{audioFileName}")
+        if blob is None:
             return None
 
-        return potentialBlob[0].generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=15), method="GET")
+        return blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=15), method="GET")
 
     def uploadAudioFile(self, audioFileName:str, downloadUrl: str)-> tuple[bool, str]:  
         try: 

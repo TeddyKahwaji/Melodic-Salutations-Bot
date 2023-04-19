@@ -1,10 +1,11 @@
 
 import discord
-from wrappers.Firebase import FireBaseApi
+from wrappers.Firebase import FireBaseApi, firestore
 from yt_dlp import YoutubeDL
 from discord import app_commands
 from discord.ext import commands
 from constants import *
+from embeds import * 
 from collections import defaultdict, deque
 from random import choice
 
@@ -23,35 +24,61 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         hasLeft = not member.bot and before.channel is not None and after.channel is None and len(before.channel.members) > 1
 
         
-        performWelcomeIntro = None 
+        collection = None 
         if hasJoined:
-            performWelcomeIntro = True 
+            collection = Collections.WELCOME_COLLECTION.value 
         elif isEmptyServer:
             await member.guild.voice_client.disconnect()
             return 
         elif hasLeft: 
-            performWelcomeIntro = False 
-            
-        if performWelcomeIntro is not None: 
-            channel = after.channel if performWelcomeIntro else before.channel
+            collection =Collections.OUTROS_COLLECTION.value 
+        
+ 
+        if collection is not None and self.Firebase.documentExistsInCollection(collection, str(member.id)): 
+            documentKey = "intro_array" if collection == Collections.WELCOME_COLLECTION.value else "outro_array"
+            channel = after.channel if collection == Collections.WELCOME_COLLECTION.value else before.channel
             if member.guild.voice_client is None:
-                vc =  await channel.connect() 
+                vc = await channel.connect() 
             else:
                 await member.guild.voice_client.move_to(channel)
                 vc = member.guild.voice_client
-            
-            collection = Collections.WELCOME_COLLECTION.value if performWelcomeIntro else Collections.OUTROS_COLLECTION.value
-            documentKey = "intro_array" if performWelcomeIntro else "outro_array"
+                
             memberVoiceLines = self.Firebase.getElementFromCollection(
-                collection, str(member.id))[documentKey]
+                collection, str(member.id))[documentKey] 
             
             voiceLineUrl = self.Firebase.getAudioFile(choice(memberVoiceLines))
             if vc.is_playing(): 
                 self.serverPlayers[member.guild.id].append(voiceLineUrl)
             else: 
                 await self.ExtractAndPlay(voiceLineUrl, vc, member.guild.id)
+    
+    @app_commands.command(name="upload", description="Upload a outro or an intro voiceline for a user.")
+    @app_commands.describe(member="The member you wish to create a voiceline for", type="The type of voiceline you are creating")
+    @app_commands.choices(type=[app_commands.Choice(name="Intro", value="intro"), app_commands.Choice(name="Outro", value="outro")])
+    async def upload(self, interaction:discord.Interaction, member: discord.Member, type: app_commands.Choice[str], file: discord.Attachment): 
+        await interaction.response.defer() 
+        member_id = member.id 
+        voice_line_type = type.value 
+        content_type = file.content_type
+        if content_type != "audio/mpeg": 
+            await interaction.followup.send("File must be mp3!")
+        else:
+            success, audioUrl = self.Firebase.uploadAudioFile(file.filename, file.url)
+            msg = None 
+            if success: 
+                collectionName = Collections.WELCOME_COLLECTION.value if voice_line_type == "intro" else Collections.OUTROS_COLLECTION.value
+                key = "intro_array" if voice_line_type == "intro" else "outro_array" 
+                memberDocument = str(member_id)
+                data = {
+                    key:  firestore.firestore.ArrayUnion([file.filename]), 
+                    "name": member.name
+                }
+                self.Firebase.insertElementInCollectionWithDefault(collectionName, memberDocument, data)
+                msg = await interaction.followup.send(embed=get_successful_file_upload_embed(member=member, type=voice_line_type, creatorMember= interaction.user, url=audioUrl))
+            else: 
+                msg = await interaction.followup.send(embed=something_went_wrong_embed())
             
-
+            await msg.delete(delay=900)
     def check_queue(self, vc: discord.VoiceClient, guild_id: int):
         if len(self.serverPlayers[guild_id]) > 0:
             next_song_up = self.serverPlayers[guild_id].popleft() 

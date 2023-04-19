@@ -5,6 +5,8 @@ class Collections(Enum):
     WELCOME_COLLECTION = "welcomeIntros"
     OUTROS_COLLECTION = "byeOutros"
 
+class Gifs(Enum): 
+    BROKEN_ROBOT = "https://media.giphy.com/media/l3vR7SWnEv6mmhS0g/giphy.gif"
 
 YDL_OPTIONS = {
     'format': 'mp3/bestaudio/best',

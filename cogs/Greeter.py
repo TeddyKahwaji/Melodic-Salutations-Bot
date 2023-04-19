@@ -78,7 +78,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             else: 
                 msg = await interaction.followup.send(embed=something_went_wrong_embed())
             
-            await msg.delete(delay=900)
+            await msg.delete(delay=600)
     def check_queue(self, vc: discord.VoiceClient, guild_id: int):
         if len(self.serverPlayers[guild_id]) > 0:
             next_song_up = self.serverPlayers[guild_id].popleft() 

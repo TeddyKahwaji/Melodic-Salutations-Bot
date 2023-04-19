@@ -9,7 +9,6 @@ from google.oauth2 import service_account
 from constants import *
 
 
-
 class FireBaseApi:
     def __init__(self):
         initialize_app(credentials.Certificate(CREDENTIALS_DICT))
@@ -23,16 +22,19 @@ class FireBaseApi:
         collection = self.db.collection(collectionName)
         requestedDocument = collection.document(documentName)
         return requestedDocument.get().to_dict()
-    
-    def insertElementInCollectionWithDefault(self, collectionName: str, documentName: str, data:dict) -> bool: 
-        try: 
-            if not self.documentExistsInCollection(collectionName, documentName): 
-                self.db.collection(collectionName).document(documentName).set(data)
-            else: 
-                self.db.collection(collectionName).document(documentName).update(data)    
-            return True 
-        except: 
+
+    def insertElementInCollectionWithDefault(self, collectionName: str, documentName: str, data: dict) -> bool:
+        try:
+            if not self.documentExistsInCollection(collectionName, documentName):
+                self.db.collection(collectionName).document(
+                    documentName).set(data)
+            else:
+                self.db.collection(collectionName).document(
+                    documentName).update(data)
+            return True
+        except:
             return False
+
     def documentExistsInCollection(self, collectionName: str, documentName: str) -> bool:
         try:
             collection = self.db.collection(collectionName)
@@ -40,7 +42,7 @@ class FireBaseApi:
             return requestedDocument.get().exists
         except:
             return False
-        
+
     def getAudioFile(self, audioFileName: str) -> str | None:
         bucket = self.storage_client.get_bucket(BUCKET_NAME)
         blob = bucket.get_blob(blob_name=f"voicelines/{audioFileName}")
@@ -49,18 +51,19 @@ class FireBaseApi:
 
         return blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=15), method="GET")
 
-    def uploadAudioFile(self, audioFileName:str, downloadUrl: str)-> tuple[bool, str]:  
-        try: 
+    def uploadAudioFile(self, audioFileName: str, downloadUrl: str) -> tuple[bool, str]:
+        try:
             bucket = self.storage_client.get_bucket(BUCKET_NAME)
             blob = bucket.blob(blob_name=f"voicelines/{audioFileName}")
             req = requests.get(downloadUrl)
             content = req.content
             token = uuid4()
             metadata = {"firebaseStorageDownloadTokens": token}
-            temp_file= tempfile.TemporaryFile()
+            temp_file = tempfile.TemporaryFile()
             temp_file.write(content)
             blob.metadata = metadata
-            blob.upload_from_file(temp_file, rewind=True, content_type="audio/mpeg")
+            blob.upload_from_file(temp_file, rewind=True,
+                                  content_type="audio/mpeg")
             temp_file.close()
             return True, blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=20), method="GET")
         except:

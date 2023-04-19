@@ -16,13 +16,14 @@ bot = commands.Bot(intents=intents, command_prefix=".")
 async def on_ready():
     print(f"Bot is ready to serve all {len(bot.guilds)} servers!")
 
+
 @bot.tree.command(name='sync', description="Owner Only")
 @commands.is_owner()
 async def sync(interaction: discord.Interaction):
     await interaction.response.defer()
     await bot.tree.sync()
     await interaction.followup.send("Commands synced!")
-    
+
 
 async def load():
     for f in os.listdir("./cogs"):

@@ -64,7 +64,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         content_type = file.content_type
         msg = None
         if content_type != "audio/mpeg":
-            msg = await interaction.followup.send(invalid_usage_embed("File must be mp3!"))
+            msg = await interaction.followup.send(embed=invalid_usage_embed("File must be mp3!"))
         else:
             success, audioUrl = self.Firebase.uploadAudioFile(
                 file.filename, file.url)

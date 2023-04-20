@@ -113,9 +113,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
                 return
 
             paginatedView = PaginatedView(member, type.value, results)
-            msg = await interaction.followup.send(view=paginatedView)
             await paginatedView.send(interaction)
-            await msg.delete(delay=600)
         except:
             msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry something went wrong!"), ephemeral=True)
             await msg.delete(delay=20)

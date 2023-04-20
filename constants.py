@@ -10,6 +10,8 @@ class Collections(Enum):
 class Gifs(Enum):
     BROKEN_ROBOT = "https://media.giphy.com/media/l3vR7SWnEv6mmhS0g/giphy.gif"
     INVALID_USAGE = "https://media.giphy.com/media/11e5gZ6NJ8AB1K/giphy.gif"
+    COOLDOWN = "https://media.giphy.com/media/xFmuT64Jto3mRO4w3G/giphy.gif"
+    ROBOT_SEARCHING = "https://media.giphy.com/media/S5tkhUBHTTWh865paS/giphy.gif"
 
 
 YDL_OPTIONS = {

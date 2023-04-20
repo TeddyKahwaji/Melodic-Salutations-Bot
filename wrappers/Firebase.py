@@ -43,7 +43,7 @@ class FireBaseApi:
         except:
             return False
 
-    def getAudioFile(self, audioFileName: str) -> str | None:
+    async def getAudioFile(self, audioFileName: str) -> str | None:
         bucket = self.storage_client.get_bucket(BUCKET_NAME)
         blob = bucket.get_blob(blob_name=f"voicelines/{audioFileName}")
         if blob is None:

@@ -4,7 +4,7 @@ from constants import Gifs
 
 def get_successful_file_upload_embed(member: Member, type: str, creatorMember: Member, url: str) -> Embed:
     embed = Embed(title=f"🎤 Voiceline {type} successfully created 🎤",
-                  colour=Colour.dark_green()
+                  colour=0x67e9ff
                   )
 
     embed.add_field(
@@ -17,10 +17,19 @@ def get_successful_file_upload_embed(member: Member, type: str, creatorMember: M
     return embed
 
 
-def something_went_wrong_embed() -> Embed:
+def no_data_for_member_embed(member: Member, type: str) -> Embed:
+    embed = Embed(
+        title=f"There are no {type} voicelines for {member.name}", color=Colour.dark_blue())
+    embed.add_field(
+        name="", value=f"Upload a voiceline for **{member.name}** with `/upload`")
+    embed.set_thumbnail(url=Gifs.ROBOT_SEARCHING.value)
+    return embed
+
+
+def something_went_wrong_embed(message) -> Embed:
     embed = Embed(title="Oops something went wrong!", colour=Colour.dark_red())
     embed.add_field(
-        name="`Sorry an error occured and I could not upload the inputted file`", value="")
+        name=f"`{message}`", value="")
     embed.set_thumbnail(url=Gifs.BROKEN_ROBOT.value)
 
     return embed

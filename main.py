@@ -4,7 +4,9 @@ import logging
 import asyncio
 import ctypes
 import ctypes.util
+from embeds import *
 from discord.ext import commands
+from discord import app_commands
 
 
 intents = discord.Intents.default()
@@ -15,6 +17,13 @@ bot = commands.Bot(intents=intents, command_prefix=".")
 @bot.event
 async def on_ready():
     print(f"Bot is ready to serve all {len(bot.guilds)} servers!")
+
+
+async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.CommandOnCooldown):
+        embed = invalid_usage_embed(error)
+        embed.set_thumbnail(url=Gifs.COOLDOWN.value)
+        await interaction.response.send_message(embed=embed, delete_after=error.retry_after, ephemeral=True)
 
 
 @bot.tree.command(name='sync', description="Owner Only")
@@ -51,4 +60,5 @@ if __name__ == "__main__":
     discord.utils.setup_logging(
         level=logging.INFO, root=False, handler=handler)
 
+    bot.tree.on_error = on_tree_error
     asyncio.run(main())

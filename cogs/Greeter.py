@@ -1,11 +1,13 @@
 
 import discord
+import asyncio
 from wrappers.Firebase import FireBaseApi, firestore
 from yt_dlp import YoutubeDL
 from discord import app_commands
 from discord.ext import commands
 from constants import *
 from embeds import *
+from views.PaginationList import PaginatedView
 from collections import defaultdict, deque
 from random import choice
 
@@ -46,7 +48,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             memberVoiceLines = self.Firebase.getElementFromCollection(
                 collection, str(member.id))[documentKey]
 
-            voiceLineUrl = self.Firebase.getAudioFile(choice(memberVoiceLines))
+            voiceLineUrl = await self.Firebase.getAudioFile(choice(memberVoiceLines))
             if voiceLineUrl is None:
                 return
             elif vc.is_playing():
@@ -54,8 +56,8 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             else:
                 await self.ExtractAndPlay(voiceLineUrl, vc, member.guild.id)
 
-    @app_commands.command(name="upload", description="Upload a outro or an intro voiceline for a user.")
-    @app_commands.describe(member="The member you wish to create a voiceline for", type="The type of voiceline you are creating")
+    @app_commands.command(name="upload", description="Upload a voiceline for a user from your server")
+    @app_commands.describe(member="The member you wish to create a voiceline for", type="The type of voiceline you are creating", file="The mp3 file you wish to upload")
     @app_commands.choices(type=[app_commands.Choice(name="Intro", value="intro"), app_commands.Choice(name="Outro", value="outro")])
     async def upload(self, interaction: discord.Interaction, member: discord.Member, type: app_commands.Choice[str], file: discord.Attachment):
         await interaction.response.defer()
@@ -81,9 +83,42 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
                     collectionName, memberDocument, data)
                 msg = await interaction.followup.send(embed=get_successful_file_upload_embed(member=member, type=voice_line_type, creatorMember=interaction.user, url=audioUrl))
             else:
-                msg = await interaction.followup.send(embed=something_went_wrong_embed())
+                msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry an error occured and I could not upload the inputted file"))
 
             await msg.delete(delay=600)
+
+    @app_commands.command(name="voicelines", description="View the voicelines of a user from your server")
+    @app_commands.describe(member="Member from your server", type="The type of voiceline you are viewing")
+    @app_commands.choices(type=[app_commands.Choice(name="Intro", value="intro"), app_commands.Choice(name="Outro", value="outro")])
+    @app_commands.checks.cooldown(1, 10)
+    async def voicelines(self, interaction: discord.Interaction, member: discord.Member, type: app_commands.Choice[str]):
+        await interaction.response.defer()
+        documentKey = "intro_array" if type.value == "intro" else "outro_array"
+        collection = Collections.WELCOME_COLLECTION.value if type.value == "intro" else Collections.OUTROS_COLLECTION.value
+        try:
+            memberDocument = self.Firebase.getElementFromCollection(
+                collection, str(member.id))
+            if memberDocument is None:
+                msg = await interaction.followup.send(embed=no_data_for_member_embed(member, type.value))
+                await msg.delete(delay=20)
+                return
+
+            memberVoiceLines = memberDocument[documentKey]
+            results = await asyncio.gather(
+                *[self.Firebase.getAudioFile(voiceline) for voiceline in memberVoiceLines])
+            results = list(filter(lambda e: e is not None, results))
+            if len(results) == 0:
+                msg = await interaction.followup.send(embed=no_data_for_member_embed(member, type.value))
+                await msg.delete(delay=20)
+                return
+
+            paginatedView = PaginatedView(member, type.value, results)
+            msg = await interaction.followup.send(view=paginatedView)
+            await paginatedView.send(interaction)
+            await msg.delete(delay=600)
+        except:
+            msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry something went wrong!"), ephemeral=True)
+            await msg.delete(delay=20)
 
     def check_queue(self, vc: discord.VoiceClient, guild_id: int):
         if len(self.serverPlayers[guild_id]) > 0:

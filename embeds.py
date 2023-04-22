@@ -48,6 +48,20 @@ def invalid_usage_embed(msg: str) -> Embed:
 def already_on_blacklist_embed(member: Member) -> Embed:
     embed = Embed(
         title=f"{member.name} is already on the blacklist!", color=Colour.dark_blue())
+
+    embed.add_field(
+        name="", value="To remove yourself from the blacklist, use `/whitelist`")
+    embed.set_thumbnail(url=member.avatar.url)
+
+    return embed
+
+
+def not_on_blacklist(member: Member) -> Embed:
+    embed = Embed(
+        title=f"{member.name} is not on the blacklist!", color=Colour.dark_blue())
+
+    embed.add_field(
+        name="", value="To add yourself to the blacklist, use `/blacklist`")
     embed.set_thumbnail(url=member.avatar.url)
 
     return embed

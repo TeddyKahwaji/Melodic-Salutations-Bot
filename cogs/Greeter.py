@@ -144,9 +144,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
     async def whitelist(self, interaction: discord.Interaction):
         member_id = str(interaction.user.id)
         if not self.Firebase.documentExistsInCollection(Collections.BLACKLIST_COLLECTION.value, member_id):
-            blacklist_embed = already_on_blacklist_embed(interaction.user)
-            blacklist_embed.title = f"{interaction.user.name} is not on the blacklist!"
-            await interaction.response.send_message(embed=blacklist_embed, ephemeral=True)
+            await interaction.response.send_message(embed=not_on_blacklist(interaction.user), ephemeral=True)
         else:
             self.Firebase.removeDocumentFromCollection(
                 Collections.BLACKLIST_COLLECTION.value, member_id)

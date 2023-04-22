@@ -36,7 +36,13 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         elif hasLeft:
             collection = Collections.OUTROS_COLLECTION.value
 
-        if collection is not None and self.Firebase.documentExistsInCollection(collection, str(member.id)):
+        memberHasVoicelines = self.Firebase.documentExistsInCollection(
+            collection, str(member.id))
+
+        isBlacklisted = self.Firebase.documentExistsInCollection(
+            Collections.BLACKLIST_COLLECTION.value, str(member.id))
+
+        if collection is not None and memberHasVoicelines and not isBlacklisted:
             documentKey = "intro_array" if collection == Collections.WELCOME_COLLECTION.value else "outro_array"
             channel = after.channel if collection == Collections.WELCOME_COLLECTION.value else before.channel
             if member.guild.voice_client is None:
@@ -117,6 +123,35 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         except:
             msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry something went wrong!"), ephemeral=True)
             await msg.delete(delay=20)
+
+    @app_commands.command(name="blacklist", description="Add yourself to the blacklist to prevent me from greeting you")
+    @app_commands.checks.cooldown(1, 10)
+    async def blacklist(self, interaction: discord.Interaction):
+        member_id = str(interaction.user.id)
+        if self.Firebase.documentExistsInCollection(Collections.BLACKLIST_COLLECTION.value, member_id):
+            await interaction.response.send_message(embed=already_on_blacklist_embed(interaction.user), ephemeral=True)
+        else:
+            data = {
+                "name": interaction.user.name,
+                "id": member_id
+            }
+            self.Firebase.insertElementInCollectionWithDefault(
+                Collections.BLACKLIST_COLLECTION.value, member_id, data)
+            await interaction.response.send_message(embed=added_to_blacklist_embed(interaction.user), ephemeral=True)
+
+    @app_commands.command(name="whitelist", description="Remove yourself from the blacklist to receive greetings from me")
+    @app_commands.checks.cooldown(1, 10)
+    async def whitelist(self, interaction: discord.Interaction):
+        member_id = str(interaction.user.id)
+        if not self.Firebase.documentExistsInCollection(Collections.BLACKLIST_COLLECTION.value, member_id):
+            blacklist_embed = already_on_blacklist_embed(interaction.user)
+            blacklist_embed.title = f"{interaction.user.name} is not on the blacklist!"
+            await interaction.response.send_message(embed=blacklist_embed, ephemeral=True)
+        else:
+            self.Firebase.removeDocumentFromCollection(
+                Collections.BLACKLIST_COLLECTION.value, member_id)
+
+            await interaction.response.send_message(embed=removed_from_blacklist_embed(interaction.user), ephemeral=True)
 
     def check_queue(self, vc: discord.VoiceClient, guild_id: int):
         if len(self.serverPlayers[guild_id]) > 0:

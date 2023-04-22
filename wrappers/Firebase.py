@@ -35,6 +35,13 @@ class FireBaseApi:
         except:
             return False
 
+    def removeDocumentFromCollection(self, collectionName: str, documentName: str) -> bool:
+        try:
+            self.db.collection(collectionName).document(documentName).delete()
+            return True
+        except:
+            return False
+
     def documentExistsInCollection(self, collectionName: str, documentName: str) -> bool:
         try:
             collection = self.db.collection(collectionName)

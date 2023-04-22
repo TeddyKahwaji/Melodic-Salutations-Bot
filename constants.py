@@ -5,6 +5,7 @@ from enum import Enum
 class Collections(Enum):
     WELCOME_COLLECTION = "welcomeIntros"
     OUTROS_COLLECTION = "byeOutros"
+    BLACKLIST_COLLECTION = "blacklist"
 
 
 class Gifs(Enum):

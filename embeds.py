@@ -43,3 +43,32 @@ def invalid_usage_embed(msg: str) -> Embed:
     )
     invalid_embed.set_thumbnail(url=Gifs.INVALID_USAGE.value)
     return invalid_embed
+
+
+def already_on_blacklist_embed(member: Member) -> Embed:
+    embed = Embed(
+        title=f"{member.name} is already on the blacklist!", color=Colour.dark_blue())
+    embed.set_thumbnail(url=member.avatar.url)
+
+    return embed
+
+
+def added_to_blacklist_embed(member: Member) -> Embed:
+    embed = Embed(
+        title=f"{member.name} has been added to the blacklist!", color=0x67e9ff)
+    embed.add_field(
+        name="", value="You will no longer be greeted with a voiceline when joining a voice channel, if you'd like to undo this use `/whitelist`")
+
+    embed.set_thumbnail(url=member.avatar.url)
+    return embed
+
+
+def removed_from_blacklist_embed(member: Member) -> Embed:
+    embed = Embed(
+        title=f"{member.name} has been removed from the blacklist!", color=0x67e9ff)
+
+    embed.add_field(
+        name="", value="You will now be greeted with voicelines, if you'd like to undo this use `/blacklist`")
+
+    embed.set_thumbnail(url=member.avatar.url)
+    return embed

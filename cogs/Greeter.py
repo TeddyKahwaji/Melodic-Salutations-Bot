@@ -71,16 +71,23 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         voice_line_type = type.value
         content_type = file.content_type
         msg = None
-        if content_type != "audio/mpeg":
-            msg = await interaction.followup.send(embed=invalid_usage_embed("File must be mp3!"))
+        if content_type not in ["audio/mpeg", "audio/mp4"]:
+            msg = await interaction.followup.send(embed=invalid_usage_embed("File must be an mp3 or mp4 file!"))
         else:
+            collectionName = Collections.WELCOME_COLLECTION.value if voice_line_type == "intro" else Collections.OUTROS_COLLECTION.value
+            key = "intro_array" if voice_line_type == "intro" else "outro_array"
+            memberDocument = str(member_id)
+            memberVoicelines = self.Firebase.getElementFromCollection(
+                collectionName, memberDocument)
+            if memberVoicelines is not None and file.filename in memberVoicelines[key]:
+                msg = await interaction.followup.send(embed=invalid_usage_embed(f"A {voice_line_type} voiceline with the title {file.filename} already exists for {member.name}"))
+                msg.delete(delay=30)
+                return
+
             success, audioUrl = self.Firebase.uploadAudioFile(
                 file.filename, file.url)
 
             if success:
-                collectionName = Collections.WELCOME_COLLECTION.value if voice_line_type == "intro" else Collections.OUTROS_COLLECTION.value
-                key = "intro_array" if voice_line_type == "intro" else "outro_array"
-                memberDocument = str(member_id)
                 data = {
                     key:  firestore.firestore.ArrayUnion([file.filename]),
                     "name": member.name
@@ -91,7 +98,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             else:
                 msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry an error occured and I could not upload the inputted file"))
 
-            await msg.delete(delay=600)
+        await msg.delete(delay=600)
 
     @app_commands.command(name="voicelines", description="View the voicelines of a user from your server")
     @app_commands.describe(member="Member from your server", type="The type of voiceline you are viewing")

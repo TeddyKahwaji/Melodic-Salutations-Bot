@@ -67,9 +67,9 @@ class FireBaseApi:
         bucket = self.storage_client.get_bucket(BUCKET_NAME)
         blob = bucket.get_blob(blob_name=f"voicelines/{audioFileName}")
         if blob is None:
-            return None
+            return None, ""
 
-        return blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=15), method="GET")
+        return blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=15), method="GET"), audioFileName
 
     async def uploadMassZip(self, member_voice_lines: list[str], zip_file: File, member: Member) -> tuple[bool, list[str]]:
         try:

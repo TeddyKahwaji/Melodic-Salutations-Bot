@@ -43,7 +43,7 @@ def get_successful_mass_upload_embed(member: Member, type: str, creatorMember: M
     for result in failed_fields:
         embed.add_field(
             name="", value=f"`Unforunately {result['file']} could not be uploaded because {result['error_message']}`", inline=False)
-    embed.title = f"🎤 {successful_voicelines-1} voiceline {type} successfully created 🎤"
+    embed.title = f"🎤 {successful_voicelines-1} voiceline {type}s successfully created 🎤"
     embed.set_thumbnail(url=member.avatar.url)
 
     embed.set_footer(

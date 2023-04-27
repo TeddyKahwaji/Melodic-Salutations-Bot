@@ -143,9 +143,9 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             memberVoiceLines = memberDocument[documentKey]
             results = await asyncio.gather(
                 *[self.Firebase.getAudioFile(voiceline) for voiceline in memberVoiceLines])
-            results = list(filter(lambda e: e is not None, results))
+            results = list(filter(lambda e: e[0] is not None, results))
             results = list(
-                map(lambda e: self.UrlShortner.tinyurl.short(e), results))
+                map(lambda e: (self.UrlShortner.tinyurl.short(e[0]), e[1]), results))
             if len(results) == 0:
                 msg = await interaction.followup.send(embed=no_data_for_member_embed(member, type.value))
                 await msg.delete(delay=20)

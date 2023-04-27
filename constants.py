@@ -51,5 +51,5 @@ COMMANDS_TO_DESCRIPTION = {
     "🗏 voicelines": "View the intro/outro voicelines for a given user",
     "🚫 blacklist": "Prevent me from using your voicelines",
     "🟩 whitelist": "Undo a previous blacklist command which allows me to use your voicelines",
-    "💀 delete": "Remove voiceliens for a given user"
+    "💀 delete": "Remove voicelines for a given user"
 }

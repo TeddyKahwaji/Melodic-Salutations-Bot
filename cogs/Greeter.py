@@ -57,7 +57,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             memberVoiceLines = self.Firebase.getElementFromCollection(
                 collection, str(member.id))[documentKey]
 
-            voiceLineUrl = await self.Firebase.getAudioFile(choice(memberVoiceLines))
+            voiceLineUrl, _ = await self.Firebase.getAudioFile(choice(memberVoiceLines))
             if voiceLineUrl is None:
                 return
             elif vc.is_playing():

@@ -19,6 +19,29 @@ async def on_ready():
     print(f"Bot is ready to serve all {len(bot.guilds)} servers!")
 
 
+@bot.tree.command(name="ping", description="View bot's latency")
+async def ping(interaction: discord.Interaction):
+    latency = round(interaction.client.latency * 1000)
+    embed_color = None
+    if latency <= 50:
+        embed_color = 0x44ff44
+    elif latency <= 100:
+        embed_color = 0xffd000
+    elif latency <= 200:
+        embed_color = 0xff6600
+    else:
+        embed_color = 0x990000
+
+    embed = discord.Embed(
+        title="PING", description=f":ping_pong: My ping is **{latency}** ms.", color=embed_color)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+@bot.tree.command(name="help", description="Displays the command menu")
+async def help(interaction: discord.Interaction):
+    await interaction.response.send_message(embed=get_help_menu_embed(), ephemeral=True)
+
+
 async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.CommandOnCooldown):
         embed = invalid_usage_embed(error)

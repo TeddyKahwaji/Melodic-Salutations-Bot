@@ -1,5 +1,5 @@
 from discord import Embed, Colour, Member
-from constants import Gifs
+from constants import Gifs, Images, COMMANDS_TO_DESCRIPTION
 
 
 def get_successful_file_upload_embed(member: Member, type: str, creatorMember: Member, url: str) -> Embed:
@@ -9,6 +9,41 @@ def get_successful_file_upload_embed(member: Member, type: str, creatorMember: M
 
     embed.add_field(
         name=f"", value=f"{member.name}'s new [Voiceline]({url}) 🎤!")
+    embed.set_thumbnail(url=member.avatar.url)
+
+    embed.set_footer(
+        text=f"Created by: {creatorMember.name}", icon_url=creatorMember.avatar.url)
+
+    return embed
+
+
+def get_successful_mass_upload_embed(member: Member, type: str, creatorMember: Member, results: list[dict]) -> Embed:
+    embed = Embed(title=f"",
+                  colour=0x67e9ff
+                  )
+    successful_voicelines = 1
+
+    successful_fields = list(filter(lambda e: e["success"], results))
+    failed_fields = list(filter(lambda e: not e["success"], results))
+
+    if len(failed_fields) == 0 and len(successful_fields) == 0:
+        return invalid_usage_embed("You provided an empty zip!")
+
+    if len(successful_fields) > 0:
+        embed.add_field(name="**Successfully processed voicelines 😊:**",
+                        value="", inline=False)
+    for result in successful_fields:
+        embed.add_field(
+            name="", value=f"{member.name}'s new [Voiceline #{successful_voicelines}]({result['url']}) 🎤!", inline=False)
+        successful_voicelines += 1
+
+    if len(failed_fields) > 0:
+        embed.add_field(name="**Failed to process voicelines 😥:**",
+                        value="", inline=False)
+    for result in failed_fields:
+        embed.add_field(
+            name="", value=f"`Unforunately {result['file']} could not be uploaded because {result['error_message']}`", inline=False)
+    embed.title = f"🎤 {successful_voicelines-1} voiceline {type} successfully created 🎤"
     embed.set_thumbnail(url=member.avatar.url)
 
     embed.set_footer(
@@ -86,3 +121,49 @@ def removed_from_blacklist_embed(member: Member) -> Embed:
 
     embed.set_thumbnail(url=member.avatar.url)
     return embed
+
+
+def select_delete_view_embed(member: Member) -> Embed:
+    embed = Embed(
+        title=f"Please select the following voicelines you'd like to delete for {member.name}", color=0x67e9ff)
+
+    embed.add_field(
+        name="", value="Please note that deletion is permanent and cannot be undone")
+
+    embed.set_thumbnail(url=member.avatar.url)
+    return embed
+
+
+def waiting_embed() -> Embed:
+    embed = Embed(
+        title="Please wait while your deletion job is completed", color=0x67e9ff)
+    embed.set_thumbnail(url=Images.WAITING_ROBOT.value)
+    return embed
+
+
+def deletion_completed_embed(results, requester_member, member) -> Embed:
+    embed = Embed(
+        title=f"{len(results)} voicelines deleted for {member.name}", color=0x67e9ff)
+
+    embed.add_field(name="**Successfully deleted voicelines 😊:**",
+                    value="", inline=False)
+    for _, filename in results:
+        embed.add_field(name="", value=f"`{filename}`", inline=False)
+
+    embed.set_thumbnail(url=member.avatar.url)
+    embed.set_footer(
+        text=f"Deleted by: {requester_member.name}", icon_url=requester_member.avatar.url)
+    return embed
+
+
+def get_help_menu_embed():
+    help_menu = Embed(
+        title="**🤖 Melodic Saluation's Help Page 👋**",
+        description=f"I only supports `/` commands, to view available commands use `/` followed by the desired command",
+        colour=0x67e9ff
+    )
+
+    for command, description in COMMANDS_TO_DESCRIPTION.items():
+        help_menu.add_field(name=f"**{command}**", value=f"``{description}``")
+
+    return help_menu

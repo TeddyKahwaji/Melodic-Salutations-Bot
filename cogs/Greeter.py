@@ -1,6 +1,7 @@
 
 import discord
 import asyncio
+import pyshorteners
 from wrappers.Firebase import FireBaseApi, firestore
 from yt_dlp import YoutubeDL
 from discord import app_commands
@@ -8,6 +9,7 @@ from discord.ext import commands
 from constants import *
 from embeds import *
 from views.PaginationList import PaginatedView
+from views.DeleteVoiceline import DeleteVoicelineView
 from collections import defaultdict, deque
 from random import choice
 
@@ -17,6 +19,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         self.bot = bot
         self.serverPlayers = defaultdict(deque)
         self.Firebase = FireBaseApi()
+        self.UrlShortner = pyshorteners.Shortener()
         super().__init__()
 
     @commands.Cog.listener()
@@ -71,32 +74,53 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         voice_line_type = type.value
         content_type = file.content_type
         msg = None
-        if content_type not in ["audio/mpeg", "audio/mp4"]:
+        if content_type not in ["audio/mpeg", "audio/mp4", "application/zip"]:
             msg = await interaction.followup.send(embed=invalid_usage_embed("File must be an mp3 or mp4 file!"))
         else:
             collectionName = Collections.WELCOME_COLLECTION.value if voice_line_type == "intro" else Collections.OUTROS_COLLECTION.value
             key = "intro_array" if voice_line_type == "intro" else "outro_array"
             memberDocument = str(member_id)
+
             memberVoicelines = self.Firebase.getElementFromCollection(
                 collectionName, memberDocument)
-            if memberVoicelines is not None and file.filename in memberVoicelines[key]:
-                msg = await interaction.followup.send(embed=invalid_usage_embed(f"A {voice_line_type} voiceline with the title {file.filename} already exists for {member.name}"))
-                msg.delete(delay=30)
-                return
+            if content_type == "application/zip":
+                success, results = await self.Firebase.uploadMassZip([] if memberVoicelines is None else memberVoicelines[key],  file, member)
+                if not success:
+                    msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry something went wrong processing the uploaded zip file :cry:"))
+                    msg.delete(delay=30)
+                    return
 
-            success, audioUrl = self.Firebase.uploadAudioFile(
-                file.filename, file.url)
+                for result in results:
+                    data = {
+                        key:  firestore.firestore.ArrayUnion([result["file"]]),
+                        "name": member.name
+                    }
+                    if result["success"]:
+                        result['url'] = self.UrlShortner.tinyurl.short(
+                            result['url'])
+                        self.Firebase.insertElementInCollectionWithDefault(
+                            collectionName, memberDocument, data)
 
-            if success:
-                data = {
-                    key:  firestore.firestore.ArrayUnion([file.filename]),
-                    "name": member.name
-                }
-                self.Firebase.insertElementInCollectionWithDefault(
-                    collectionName, memberDocument, data)
-                msg = await interaction.followup.send(embed=get_successful_file_upload_embed(member=member, type=voice_line_type, creatorMember=interaction.user, url=audioUrl))
+                msg = await interaction.followup.send(embed=get_successful_mass_upload_embed(member, voice_line_type, interaction.user, results))
             else:
-                msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry an error occured and I could not upload the inputted file"))
+                if memberVoicelines is not None and file.filename in memberVoicelines[key]:
+                    msg = await interaction.followup.send(embed=invalid_usage_embed(f"A {voice_line_type} voiceline with the title {file.filename} already exists for {member.name}"))
+                    msg.delete(delay=30)
+                    return
+
+                success, audioUrl = self.Firebase.uploadAudioFile(
+                    file.filename, file.url)
+
+                if success:
+                    data = {
+                        key:  firestore.firestore.ArrayUnion([file.filename]),
+                        "name": member.name
+                    }
+                    self.Firebase.insertElementInCollectionWithDefault(
+                        collectionName, memberDocument, data)
+                    msg = await interaction.followup.send(embed=get_successful_file_upload_embed(member=member, type=voice_line_type, creatorMember=interaction.user, url=audioUrl))
+                else:
+                    msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry an error occured and I could not upload the inputted file"))
 
         await msg.delete(delay=600)
 
@@ -120,6 +144,8 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             results = await asyncio.gather(
                 *[self.Firebase.getAudioFile(voiceline) for voiceline in memberVoiceLines])
             results = list(filter(lambda e: e is not None, results))
+            results = list(
+                map(lambda e: self.UrlShortner.tinyurl.short(e), results))
             if len(results) == 0:
                 msg = await interaction.followup.send(embed=no_data_for_member_embed(member, type.value))
                 await msg.delete(delay=20)
@@ -157,6 +183,27 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
                 Collections.BLACKLIST_COLLECTION.value, member_id)
 
             await interaction.response.send_message(embed=removed_from_blacklist_embed(interaction.user), ephemeral=True)
+
+    @app_commands.command(name="delete", description="Deletes voicelines for a given member")
+    @app_commands.describe(member="Member from your server", type="The type of voiceline you are viewing")
+    @app_commands.choices(type=[app_commands.Choice(name="Intro", value="intro"), app_commands.Choice(name="Outro", value="outro")])
+    @app_commands.checks.cooldown(1, 10)
+    async def delete(self, interaction: discord.Interaction, member: discord.Member, type: app_commands.Choice[str]):
+        await interaction.response.defer()
+        voice_line_type = type.value
+        collectionName = Collections.WELCOME_COLLECTION.value if voice_line_type == "intro" else Collections.OUTROS_COLLECTION.value
+        memberDocument = str(member.id)
+        key = "intro_array" if voice_line_type == "intro" else "outro_array"
+        memberVoicelines = self.Firebase.getElementFromCollection(
+            collectionName, memberDocument)
+        msg = None
+        if memberVoicelines is None or len(memberVoicelines[key]) == 0:
+            msg = await interaction.followup.send(embed=no_data_for_member_embed(member, voice_line_type))
+            await msg.delete(delay=180)
+        else:
+            deleteView = DeleteVoicelineView(memberVoicelines[key], member, voice_line_type, interaction.user, delete_key=lambda fileName: self.Firebase.deleteAudioFile(
+                fileName), insert_key=lambda e: self.Firebase.insertElementInCollectionWithDefault(collectionName, memberDocument, e))
+            await deleteView.send(interaction)
 
     def check_queue(self, vc: discord.VoiceClient, guild_id: int):
         if len(self.serverPlayers[guild_id]) > 0:

@@ -3,7 +3,7 @@ import discord
 
 class PaginatedView(discord.ui.View):
     current_page: int = 1
-    sep: int = 4
+    sep: int = 5
 
     def __init__(self,  member: discord.Member, type: str, data: list[str]):
         self.data = data

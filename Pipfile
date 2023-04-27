@@ -10,6 +10,7 @@ yt-dlp = "*"
 firebase-admin = "*"
 ffmpeg = "*"
 pynacl = "*"
+pyshorteners = "*"
 
 [dev-packages]
 

@@ -3,3 +3,4 @@ discord.log
 env
 .vscode
 *.mp3
+.venv

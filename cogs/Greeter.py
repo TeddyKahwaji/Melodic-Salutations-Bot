@@ -2,6 +2,7 @@
 import discord
 import asyncio
 import pyshorteners
+from datetime import datetime
 from wrappers.Firebase import FireBaseApi, firestore
 from yt_dlp import YoutubeDL
 from discord import app_commands
@@ -57,7 +58,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             memberVoiceLines = self.Firebase.getElementFromCollection(
                 collection, str(member.id))[documentKey]
 
-            voiceLineUrl, _ = await self.Firebase.getAudioFile(choice(memberVoiceLines))
+            voiceLineUrl, _ = await self.Firebase.getAudioFile(choice(memberVoiceLines)["track_name"])
             if voiceLineUrl is None:
                 return
             elif vc.is_playing():
@@ -73,6 +74,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         member_id = member.id
         voice_line_type = type.value
         content_type = file.content_type
+        current_time = datetime.now()
         msg = None
         if content_type not in ["audio/mpeg", "audio/mp4", "application/zip"]:
             msg = await interaction.followup.send(embed=invalid_usage_embed("File must be an mp3 or mp4 file!"))
@@ -89,10 +91,14 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
                     msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry something went wrong processing the uploaded zip file :cry:"))
                     msg.delete(delay=30)
                     return
-
+                seen = set()
                 for result in results:
+                    if result["file"] in seen:
+                        continue
+
+                    seen.add(result["file"])
                     data = {
-                        key:  firestore.firestore.ArrayUnion([result["file"]]),
+                        key:  firestore.firestore.ArrayUnion([{"track_name": result["file"], "created_at": current_time}]),
                         "name": member.name
                     }
                     if result["success"]:
@@ -113,7 +119,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
 
                 if success:
                     data = {
-                        key:  firestore.firestore.ArrayUnion([file.filename]),
+                        key:  firestore.firestore.ArrayUnion([{"track_name": file.filename, "created_at": current_time}]),
                         "name": member.name
                     }
                     self.Firebase.insertElementInCollectionWithDefault(
@@ -142,7 +148,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
 
             memberVoiceLines = memberDocument[documentKey]
             results = await asyncio.gather(
-                *[self.Firebase.getAudioFile(voiceline) for voiceline in memberVoiceLines])
+                *[self.Firebase.getAudioFile(elem["track_name"]) for elem in memberVoiceLines])
             results = list(filter(lambda e: e[0] is not None, results))
             results = list(
                 map(lambda e: (self.UrlShortner.tinyurl.short(e[0]), e[1]), results))

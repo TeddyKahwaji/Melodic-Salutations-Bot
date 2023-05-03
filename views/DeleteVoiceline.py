@@ -16,7 +16,7 @@ class DeleteVoicelineView(discord.ui.View):
 
     async def send(self, interaction: discord.Interaction):
         self.selection_wheel.options = [discord.SelectOption(
-            label=voiceline, value=voiceline) for voiceline in self.voice_lines[:25]]
+            label=voiceline["track_name"], value=voiceline["track_name"]) for voiceline in self.voice_lines[:25]]
         self.selection_wheel.max_values = len(self.voice_lines)
         self.message = await interaction.followup.send(view=self)
         await self.message.delete(delay=600)

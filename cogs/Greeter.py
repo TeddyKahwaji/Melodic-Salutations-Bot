@@ -12,7 +12,7 @@ from embeds import *
 from views.PaginationList import PaginatedView
 from views.DeleteVoiceline import DeleteVoicelineView
 from collections import defaultdict, deque
-from random import choice
+from random import choices
 
 
 class GreeterCog(commands.Cog, name="Greeter", description="Responsible for playing greetings and outros"):
@@ -49,16 +49,25 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         if collection is not None and memberHasVoicelines and not isBlacklisted:
             documentKey = "intro_array" if collection == Collections.WELCOME_COLLECTION.value else "outro_array"
             channel = after.channel if collection == Collections.WELCOME_COLLECTION.value else before.channel
-            if member.guild.voice_client is None:
+            memberVoiceLines = self.Firebase.getElementFromCollection(
+                collection, str(member.id))[documentKey]
+            if len(memberVoiceLines) == 0:
+                return
+            elif member.guild.voice_client is None:
                 vc = await channel.connect()
             else:
                 await member.guild.voice_client.move_to(channel)
                 vc = member.guild.voice_client
 
-            memberVoiceLines = self.Firebase.getElementFromCollection(
-                collection, str(member.id))[documentKey]
-
-            voiceLineUrl, _ = await self.Firebase.getAudioFile(choice(memberVoiceLines)["track_name"])
+            memberVoiceLines.sort(
+                key=lambda e: e["created_at"], reverse=True)
+            starting_weight = 50
+            weights = []
+            for _ in memberVoiceLines:
+                weights.append(starting_weight)
+                starting_weight /= 1.5
+            choice = choices(memberVoiceLines, weights=weights)[0]
+            voiceLineUrl, _ = await self.Firebase.getAudioFile(choice["track_name"])
             if voiceLineUrl is None:
                 return
             elif vc.is_playing():
@@ -66,9 +75,9 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             else:
                 await self.ExtractAndPlay(voiceLineUrl, vc, member.guild.id)
 
-    @app_commands.command(name="upload", description="Upload a voiceline for a user from your server")
-    @app_commands.describe(member="The member you wish to create a voiceline for", type="The type of voiceline you are creating", file="The mp3 file you wish to upload")
-    @app_commands.choices(type=[app_commands.Choice(name="Intro", value="intro"), app_commands.Choice(name="Outro", value="outro")])
+    @ app_commands.command(name="upload", description="Upload a voiceline for a user from your server")
+    @ app_commands.describe(member="The member you wish to create a voiceline for", type="The type of voiceline you are creating", file="The mp3 file you wish to upload")
+    @ app_commands.choices(type=[app_commands.Choice(name="Intro", value="intro"), app_commands.Choice(name="Outro", value="outro")])
     async def upload(self, interaction: discord.Interaction, member: discord.Member, type: app_commands.Choice[str], file: discord.Attachment):
         await interaction.response.defer()
         member_id = member.id

@@ -81,7 +81,7 @@ class FireBaseApi:
                 if file.split(".")[-1] not in ["mp3", 'm4a']:
                     results.append({"file": file, "success": False,
                                     "error_message": "file must be an mp3 or mp4 file!"})
-                elif file in member_voice_lines:
+                elif any(elem["track_name"] == file for elem in member_voice_lines):
                     results.append(
                         {"file": file, "success": False, "error_message": f"voiceline with the title {file} already exists for {member.name}"})
                 else:

@@ -16,6 +16,7 @@ bot = commands.Bot(intents=intents, command_prefix=".")
 
 @bot.event
 async def on_ready():
+    await bot.change_presence(activity=discord.Game("/help"))
     print(f"Bot is ready to serve all {len(bot.guilds)} servers!")
 
 

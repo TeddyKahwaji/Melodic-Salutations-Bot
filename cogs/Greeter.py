@@ -86,7 +86,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
         current_time = datetime.now()
         msg = None
         if content_type not in ["audio/mpeg", "audio/mp4", "application/zip"]:
-            msg = await interaction.followup.send(embed=invalid_usage_embed("File must be an mp3 or mp4 file!"))
+            msg = await interaction.followup.send(embed=invalid_usage_embed("File must be an mp3 or m4a file!"))
         else:
             collectionName = Collections.WELCOME_COLLECTION.value if voice_line_type == "intro" else Collections.OUTROS_COLLECTION.value
             key = "intro_array" if voice_line_type == "intro" else "outro_array"
@@ -118,7 +118,9 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
 
                 msg = await interaction.followup.send(embed=get_successful_mass_upload_embed(member, voice_line_type, interaction.user, results))
             else:
-                if memberVoicelines is not None and file.filename in memberVoicelines[key]:
+                fileAlreadyExists = memberVoicelines is not None and any(
+                    elem["track_name"] == file.filename for elem in memberVoicelines[key])
+                if fileAlreadyExists:
                     msg = await interaction.followup.send(embed=invalid_usage_embed(f"A {voice_line_type} voiceline with the title {file.filename} already exists for {member.name}"))
                     msg.delete(delay=30)
                     return

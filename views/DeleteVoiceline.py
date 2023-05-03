@@ -34,7 +34,7 @@ class DeleteVoicelineView(discord.ui.View):
             *[self.delete_key(selected_audio_file) for selected_audio_file in selected_results])
         results = list(filter(lambda success: success[0], results))
         if len(results) == 0:
-            await self.message.edit(view=something_went_wrong_embed("Something went wrong in the deletion process"))
+            await self.message.edit(view=None, embed=something_went_wrong_embed("Something went wrong in the deletion process"))
             self.message.delete(delay=180)
             return
 

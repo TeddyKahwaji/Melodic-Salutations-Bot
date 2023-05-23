@@ -44,18 +44,38 @@ async def help(interaction: discord.Interaction):
 
 
 async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    error_log_channel_id = 1094732412845576266
     if isinstance(error, app_commands.CommandOnCooldown):
         embed = invalid_usage_embed(error)
         embed.set_thumbnail(url=Gifs.COOLDOWN.value)
         await interaction.response.send_message(embed=embed, delete_after=error.retry_after, ephemeral=True)
 
+    error_log_channel = await interaction.client.fetch_channel(error_log_channel_id)
+    errored_command = error.command.name
+    errored_guild = interaction.guild
+    await error_log_channel.send(embed=get_error_log_embed(errored_command, errored_guild, error))
+
+
+@bot.tree.command(
+    name="reload",
+    description="Reloads the cog files. Use this to deploy changes to the bot"
+)
+@commands.is_owner()
+async def reload(interaction: discord.Interaction):
+    if not await bot.is_owner(interaction.user):
+        return
+    await interaction.response.send_message("Reloaded cogs!", ephemeral=True)
+    await load(reload=True)
+
 
 @bot.tree.command(name='sync', description="Owner Only")
 @commands.is_owner()
 async def sync(interaction: discord.Interaction):
-    await interaction.response.defer()
+    if not await bot.is_owner(interaction.user):
+        return
+    await interaction.response.send_message("Commands synced!", ephemeral=True)
+    await bot.wait_until_ready()
     await bot.tree.sync()
-    await interaction.followup.send("Commands synced!")
 
 
 async def load():

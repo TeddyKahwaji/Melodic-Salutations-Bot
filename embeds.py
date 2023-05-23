@@ -167,3 +167,16 @@ def get_help_menu_embed():
         help_menu.add_field(name=f"**{command}**", value=f"``{description}``")
 
     return help_menu
+
+
+def get_error_log_embed(command, guild, error):
+    error_log_embed = Embed(
+        title=f"{command} command failed",
+        colour=Colour.red()
+    )
+
+    error_log_embed.add_field(name="Error: ", value=error, inline=False)
+    error_log_embed.set_thumbnail(url=guild.icon.url)
+    error_log_embed.add_field(
+        name="Guild: ", value=f"`{guild.name}`", inline=True)
+    return error_log_embed

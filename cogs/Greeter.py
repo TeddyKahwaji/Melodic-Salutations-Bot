@@ -219,7 +219,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
             await msg.delete(delay=180)
         else:
             deleteView = DeleteVoicelineView(memberVoicelines[key], member, voice_line_type, interaction.user, delete_key=lambda fileName: self.Firebase.deleteAudioFile(
-                fileName), insert_key=lambda e: self.Firebase.insertElementInCollectionWithDefault(collectionName, memberDocument, e))
+                fileName), insert_key=lambda e: self.Firebase.insertElementInCollectionWithDefault(collectionName, memberDocument, e), member_voicelines=memberVoicelines[key])
             await deleteView.send(interaction)
 
     def check_queue(self, vc: discord.VoiceClient, guild_id: int):

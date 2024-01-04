@@ -3,7 +3,7 @@ import discord
 
 class PaginatedView(discord.ui.View):
     current_page: int = 1
-    sep: int = 5
+    sep: int = 8
 
     def __init__(self,  member: discord.Member, type: str, data: list[str]):
         self.data = data
@@ -26,12 +26,13 @@ class PaginatedView(discord.ui.View):
 
         until_item = self.current_page * self.sep
         from_item = until_item - self.sep
-        for url, filename in data:
+        for content in data:
+            url, _ = content
             embed.add_field(name="",
-                            value=f"`{from_item+1}:` [{filename}]({url})", inline=False)
+                            value=f"`{from_item+1}:` [{self.member.name} #{from_item +1}]({url})", inline=False)
             from_item += 1
         embed.set_footer(
-            text=f"Page {self.current_page} / {int(len(self.data) / self.sep) + 1}", icon_url=self.member.avatar.url)
+            text=f"Page {self.current_page} / {int(len(self.data) / self.sep) +1}", icon_url=self.member.avatar.url)
         return embed
 
     async def update_message(self):

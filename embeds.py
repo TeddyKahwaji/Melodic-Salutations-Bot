@@ -147,8 +147,6 @@ def deletion_completed_embed(results, requester_member, member) -> Embed:
 
     embed.add_field(name="**Successfully deleted voicelines 😊:**",
                     value="", inline=False)
-    for _, filename in results:
-        embed.add_field(name="", value=f"`{filename}`", inline=False)
 
     embed.set_thumbnail(url=member.avatar.url)
     embed.set_footer(

@@ -100,12 +100,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
                     msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry something went wrong processing the uploaded zip file :cry:"))
                     msg.delete(delay=30)
                     return
-                seen = set()
                 for result in results:
-                    if result["file"] in seen:
-                        continue
-
-                    seen.add(result["file"])
                     data = {
                         key:  firestore.firestore.ArrayUnion([{"track_name": result["file"], "created_at": current_time}]),
                         "name": member.name
@@ -118,26 +113,17 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
 
                 msg = await interaction.followup.send(embed=get_successful_mass_upload_embed(member, voice_line_type, interaction.user, results))
             else:
-                fileAlreadyExists = memberVoicelines is not None and any(
-                    elem["track_name"] == file.filename for elem in memberVoicelines[key])
-                if fileAlreadyExists:
-                    msg = await interaction.followup.send(embed=invalid_usage_embed(f"A {voice_line_type} voiceline with the title {file.filename} already exists for {member.name}"))
-                    msg.delete(delay=30)
-                    return
-
-                success, audioUrl = self.Firebase.uploadAudioFile(
-                    file.filename, file.url)
-
+                success, audioUrl, fileName = self.Firebase.uploadAudioFile(file.url)
                 if success:
                     data = {
-                        key:  firestore.firestore.ArrayUnion([{"track_name": file.filename, "created_at": current_time}]),
+                        key:  firestore.firestore.ArrayUnion([{"track_name": fileName, "created_at": current_time}]),
                         "name": member.name
                     }
                     self.Firebase.insertElementInCollectionWithDefault(
                         collectionName, memberDocument, data)
                     msg = await interaction.followup.send(embed=get_successful_file_upload_embed(member=member, type=voice_line_type, creatorMember=interaction.user, url=audioUrl))
                 else:
-                    msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry an error occured and I could not upload the inputted file"))
+                    msg = await interaction.followup.send(embed=something_went_wrong_embed("Sorry an error occurred and I could not upload the inputted file"))
 
         await msg.delete(delay=600)
 

@@ -1,6 +1,7 @@
 from firebase_admin import credentials, firestore, initialize_app
 from discord import File, Member
 from google.cloud import storage
+from uuid import uuid4
 from utils import *
 from uuid import uuid4
 import io
@@ -102,21 +103,23 @@ class FireBaseApi:
     async def uploadAudioFileWithoutDownloading(self, zf: zipfile.ZipFile, fileName: str) -> tuple[bool, str]:
         try:
             with zf.open(fileName) as f:
+                voiceline_title = str(uuid4())
                 token = uuid4()
                 bucket = self.storage_client.get_bucket(BUCKET_NAME)
                 metadata = {"firebaseStorageDownloadTokens": token}
-                blob = bucket.blob(blob_name=f"voicelines/{fileName}")
+                blob = bucket.blob(blob_name=f"voicelines/{voiceline_title}")
                 blob.metadata = metadata
                 blob.upload_from_file(
                     f, rewind=True, content_type="audio/mpeg")
-                return True, blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=20), method="GET"), fileName
+                return True, blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=20), method="GET"), voiceline_title
         except Exception as e:
-            return False, e, fileName
+            return False, e, voiceline_title
 
-    def uploadAudioFile(self, audioFileName: str, downloadUrl: str) -> tuple[bool, str]:
+    def uploadAudioFile(self, downloadUrl: str) -> tuple[bool, str, str]:
         try:
+            voiceline_title = str(uuid4())
             bucket = self.storage_client.get_bucket(BUCKET_NAME)
-            blob = bucket.blob(blob_name=f"voicelines/{audioFileName}")
+            blob = bucket.blob(blob_name=f"voicelines/{voiceline_title}")
             req = requests.get(downloadUrl)
             content = req.content
             token = uuid4()
@@ -127,6 +130,6 @@ class FireBaseApi:
             blob.upload_from_file(temp_file, rewind=True,
                                   content_type="audio/mpeg")
             temp_file.close()
-            return True, blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=20), method="GET")
+            return True, blob.generate_signed_url(version="v4", expiration=datetime.timedelta(minutes=20), method="GET"), voiceline_title
         except:
-            return False, ""
+            return False, "", ""

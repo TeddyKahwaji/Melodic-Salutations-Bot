@@ -102,7 +102,7 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
                     return
                 for result in results:
                     data = {
-                        key:  firestore.firestore.ArrayUnion([{"track_name": result["file"], "created_at": current_time}]),
+                        key:  firestore.firestore.ArrayUnion([{"track_name": result["file"], "created_at": current_time, "added_by": interaction.user.id}]),
                         "name": member.name
                     }
                     if result["success"]:
@@ -113,10 +113,11 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
 
                 msg = await interaction.followup.send(embed=get_successful_mass_upload_embed(member, voice_line_type, interaction.user, results))
             else:
-                success, audioUrl, fileName = self.Firebase.uploadAudioFile(file.url)
+                success, audioUrl, fileName = self.Firebase.uploadAudioFile(
+                    file.url)
                 if success:
                     data = {
-                        key:  firestore.firestore.ArrayUnion([{"track_name": fileName, "created_at": current_time}]),
+                        key:  firestore.firestore.ArrayUnion([{"track_name": fileName, "created_at": current_time, "added_by": interaction.user.id}]),
                         "name": member.name
                     }
                     self.Firebase.insertElementInCollectionWithDefault(

@@ -12,7 +12,7 @@ from embeds import *
 from views.PaginationList import PaginatedView
 from views.DeleteVoiceline import DeleteVoicelineView
 from collections import defaultdict, deque
-from random import choices
+import random
 
 
 class GreeterCog(commands.Cog, name="Greeter", description="Responsible for playing greetings and outros"):
@@ -61,13 +61,8 @@ class GreeterCog(commands.Cog, name="Greeter", description="Responsible for play
 
             memberVoiceLines.sort(
                 key=lambda e: e["created_at"], reverse=True)
-            starting_weight = 50
-            weights = []
-            for _ in memberVoiceLines:
-                weights.append(starting_weight)
-                starting_weight /= 1.5
-            choice = choices(memberVoiceLines, weights=weights)[0]
-            voiceLineUrl, _ = await self.Firebase.getAudioFile(choice["track_name"])
+            chosen_track = random.choice(memberVoiceLines)
+            voiceLineUrl, _ = await self.Firebase.getAudioFile(chosen_track["track_name"])
             if voiceLineUrl is None:
                 return
             elif vc.is_playing():

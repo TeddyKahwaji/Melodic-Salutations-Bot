@@ -55,10 +55,13 @@ class FireBaseApi:
         except:
             return False
 
-    async def deleteAudioFile(self, audioFileName: str) -> bool:
+    async def deleteAudioFile(self, userId: int, audioFileName: str) -> bool:
         try:
             bucket = self.storage_client.get_bucket(BUCKET_NAME)
             blob = bucket.get_blob(blob_name=f"voicelines/{audioFileName}")
+            bucket.copy_blob(
+                blob, bucket, f"archive/{userId}/{audioFileName}",
+            )
             blob.delete()
             return True, audioFileName
         except:

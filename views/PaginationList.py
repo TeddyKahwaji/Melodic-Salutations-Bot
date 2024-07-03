@@ -32,7 +32,7 @@ class PaginatedView(discord.ui.View):
                             value=f"`{from_item+1}:` [{self.member.name} #{from_item +1}]({url})", inline=False)
             from_item += 1
         embed.set_footer(
-            text=f"Page {self.current_page} / {int(len(self.data) / self.sep) +1}", icon_url=self.member.avatar.url)
+            text=f"Page {self.current_page} / {int(len(self.data) / self.sep) + 1}", icon_url=self.member.avatar.url)
         return embed
 
     async def update_message(self):
